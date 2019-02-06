@@ -1,0 +1,41 @@
+version: '3'
+services:
+    haproxy-service:
+      image: haproxy:1.9.1
+      container_name: haproxy_load_balancer
+      restart: always
+      # depends_on:
+      #  - uc-service
+      # links:
+      #  - uc-service:uc-service
+      networks:
+       - haproxy_load_balancer_network
+      ports:
+       - "80:80"
+       - "443:443"
+       - "9000:9000"
+      volumes:
+        # - /var/run/docker.sock:/tmp/docker.sock:ro
+        - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+        - ./error/503.html:/etc/haproxy/error/503.html
+        - ./cert/local-haproxy.ru.pem:/local-haproxy.ru.pem
+        - ./whitelist.txt:/whitelist.txt
+        - ./cert:/cert
+
+    uc-service:
+      image: nginx:1.15
+      container_name: uc-service
+      restart: always
+      networks:
+        - haproxy_load_balancer_network
+      ports:
+        - "81:80"
+        # - "443:443"
+      volumes:
+        - ./uc:/usr/share/nginx/html
+        - ./503.conf:/etc/nginx/conf.d/default.conf
+        # - /var/run/docker.sock:/tmp/docker.sock:ro 
+
+networks:
+  haproxy_load_balancer_network:
+    driver: bridge
